@@ -1,29 +1,30 @@
-#explore the json file
+
 import json
-import arcpy
-import os
-
-def importJSON(workspace=r'C:\Users\cecil\Documents\ArcGIS\Projects\GEOG4057',input='no_tax.json', output='notax_fc.shp')
-"""
-Function to import JSON format data into a shapefile
-"""
-
 with open('no_tax.json','r') as file:
     tax_json = json.load(file)
 
-arcpy.FromWKT(tax_json['data'][8][8])
+import arcpy
 for row in tax_json['data']:
     row[8] = arcpy.FromWKT(row[8])
 
-## Create a feature class and write fields
+
+import os
 fcname = 'notax_fc.shp'
-workspace = r'C:\Users\cecil\Documents\programming\geog4057_ccchapman\project\data'
+workspace = r'C:\Users\leiwang\Downloads'
 fc_fullname = os.path.join(workspace,fcname)
 if arcpy.Exists(fc_fullname):
     arcpy.management.Delete(fc_fullname)
 
+arcpy.management.CreateFeatureclass(out_path=workspace,out_name=fcname,
+                                    geometry_type='POLYGON',
+                                    spatial_reference=4236)
+
+desc = arcpy.da.Describe(fc_fullname)
+for field in desc['fields']:
+    print(field.name)
+
+
 ## add field names
-arcpy.management.CreateFeatureclass(out_path=workspace,out_name=fcname,geometry_type='POLYGON',spatial_reference=4236)
 fields = tax_json['meta']['view']['columns']
 for field in fields:
     print(field['name'])
@@ -40,6 +41,9 @@ for ind,field in enumerate(fields):
     field_names.append(name)
 field_names = [field.replace(" ","_") for field in field_names]
 field_names = [field.replace(".","_") for field in field_names]
+field_names
+
+
 for ind,field_name in enumerate(field_names):
     arcpy.management.AddField(fc_fullname,field_name=field_name,field_type=field_type[ind])
 field_names.append('SHAPE@')
@@ -59,4 +63,3 @@ with arcpy.da.InsertCursor(fc_fullname,field_names=field_names) as cursor:
             new_row.append(value)
         new_row.append(row[8])
         cursor.insertRow(new_row)
-    
